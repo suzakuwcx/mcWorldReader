@@ -34,6 +34,9 @@ def parse(file):
         offset_bytes, sector_count = struct.unpack_from('>3s1B', location)
         offset = int.from_bytes(offset_bytes, byteorder='big')
 
+        if offset == 0 and sector_count == 0:
+            continue
+
         #
         # read sector that contain chunk file
         #
