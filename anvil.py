@@ -26,7 +26,7 @@ def parse(file):
     #
     locations_bytes = struct.unpack_from('>{}'.format('4s' * 1024), buff, offset=0)
 
-    for i, location in enumerate(locations_bytes):
+    for location in locations_bytes:
         # 
         # | 3bit   |    1bit      |
         # | inode  | sector_count |, Big ending
