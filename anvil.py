@@ -3,6 +3,8 @@ import gzip
 import zlib
 import nbtlib
 import io
+import numpy as np
+
 
 def parse(file):
     with open(file, mode='rb') as f:
@@ -77,18 +79,13 @@ def parse(file):
                 continue
 
             states = chunk['block_states']
-            palette = states['palette']
-
-            blocks = [[[0] * 16 for _ in range(16)] for _ in range(16)]
+            palette = np.array([p["Name"].unpack() for p in states['palette']])
 
             #
             # If entire chunk has only one types of block(e.g. air), only this block will be stored
             #
             if 'data' not in states:
-                for x in range(16):
-                    for y in range(16):
-                        for z in range(16):
-                            blocks[x][y][z] = palette[0]["Name"].unpack()
+                blocks = np.full((16, 16, 16), palette[0])
 
             #
             # 'data' container 4096 element and split into long integer list to storage.
@@ -99,23 +96,41 @@ def parse(file):
             #
             else:
                 data_len = max(4, (len(palette) - 1).bit_length())
-                blocks_per_long = 64 // data_len
-
+                padding_per_long = 64 % data_len
+                # 
                 data = states['data']
 
-                for i, long_integer in enumerate(data):
-                    bit_map = format(long_integer.as_unsigned, '064b')
+                #
+                # References:
+                # https://github.com/MestreLion/mcworldlib/blob/main/mcworldlib/chunk.py
+                # https://wiki.vg/Chunk_Format
+                #
+                # For example, assume data_len is 5:
+                # LongArray([Long(2459565876494606864), Long(2459565876494606883), ... , Long(2459565876494606882)
+                # The first Long will contain block 12 - 0, second will contain 24 - 13, ...
+                # The bit distributed in each Long will be
+                #
+                # | Index  | PAD|12 |11 |10 | 9 |      | 0 |
+                # +---------------------------------------------------
+                # | bitmap | PPPAAAABBBBCCCCDDDD........LLLL
+                #
+                # Because of that bit operation in python is really difficult, so we need to unpackbits first
+                # unpackbits example: 0x03 ---> 0B00000011 ---> [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01]
+                # So, First, 
+                #   reverse LongArray to make index continuous(from 11 - 0, 24 - 13 ... 4096 - 4084 to 4096 - 4084, 4083 - 4072, ..., 11 - 0 )
+                #   change the view to uint8(8bit, like AAAA) then reshape by Long length(64)
+                #   remove padding bit on the left([:, padding_per_long:64])
+                #   spilt with data_len to parsing each block (4095, 4094, ... 1, 0)
+                #   padding 0 value to make the value of each block back to uint64 length for unpack to real value
+                #   unpack to real index value
+                #   reverse again to make value match index (0, 1, 4094, 4095)
+                #
+                bit_map = np.unpackbits(data[::-1].astype(f">i8").view("uint8").unpack()).reshape(-1, 64)[:, padding_per_long:64].reshape(-1, data_len)
+                bit_map = np.packbits(np.pad(bit_map, [(0, 0), (64 - data_len, 0)], 'constant'), axis=1)
+                bit_map = bit_map.view(dtype=">q")[::-1][:4096]
 
-                    for j in range(blocks_per_long):
-                        index = i * blocks_per_long + j
-                        if index == 4096:
-                            break
-
-                        palette_index = int(bit_map[64 - (j + 1) * data_len:64 - j * data_len], 2)
-                        y = index // (16 * 16)
-                        z = (index - y * 16 * 16) // 16
-                        x = index % 16
-                        blocks[x][y][z] = palette[palette_index]["Name"].unpack()
+                # (z, x, y) -> (x, y, z)
+                blocks = palette[bit_map.flatten()].reshape(16, 16, 16).transpose(2, 0, 1)
                 
             world["{}|{}|{}".format(chunk_nbt["xPos"].unpack(), chunk["Y"].unpack(), chunk_nbt["zPos"].unpack())] = blocks
 

@@ -1,1 +1,2 @@
 nbtlib
+numpy
