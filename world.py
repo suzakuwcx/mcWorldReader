@@ -1,4 +1,4 @@
-from anvil import parse
+from anvil import Region
 import glob
 import multiprocessing
 import re
@@ -26,7 +26,7 @@ class World():
         regions_index = lil_matrix((x_max - x_min + 1, z_max - z_min + 1), dtype=int)
         regions = []
         with multiprocessing.Pool() as p:
-            result = p.map(parse, mca_list)
+            result = p.map(Region.load, mca_list)
 
         for coord, r in zip(mca_coord_list, result):
             regions_index[coord[0], coord[1]] = len(regions)
@@ -49,14 +49,14 @@ class World():
         chunks_y = y // 16
         chunks_z = in_regions_z // 16
 
-        in_chunks_x = chunks_x % 16
+        in_chunks_x = in_regions_x % 16
         in_chunks_y = y % 16
-        in_chunks_z = chunks_z % 16
+        in_chunks_z = in_regions_z % 16
 
         region = self.regions[self.regions_index[regions_x, regions_z]]
-        chunks = region[chunks_x][chunks_z]
+        chunks = region[chunks_x, chunks_z]
         sections = chunks[chunks_y]
-        block = sections[in_chunks_x][in_chunks_y][in_chunks_z]
+        block = sections[in_chunks_x, in_chunks_y, in_chunks_z]
 
         return block
 
