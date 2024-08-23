@@ -27,8 +27,11 @@ def parse(file):
     # A region file contains 32 * 32 chunks, each chunk take 4bit location in inode 0
     #
     locations_bytes = struct.unpack_from('>{}'.format('4s' * 1024), buff, offset=0)
+    chunks_map = [[0] * 32 for _ in range(32)]
 
-    for location in locations_bytes:
+    for chunks_index, location in enumerate(locations_bytes):
+        chunks = [None] * 25
+
         # 
         # | 3bit   |    1bit      |
         # | inode  | sector_count |, Big ending
@@ -69,16 +72,14 @@ def parse(file):
 
         chunk_nbt = nbtlib.File.from_fileobj(io.BytesIO(chunk_file))
 
-        world = {}
-
         #
         # the metadata offset of the chunk (x, z) is "x + 32z"
         #
-        for chunk in chunk_nbt["sections"]:
-            if 'block_states' not in chunk:
+        for section in chunk_nbt["sections"]:
+            if 'block_states' not in section:
                 continue
 
-            states = chunk['block_states']
+            states = section['block_states']
             palette = np.array([p["Name"].unpack() for p in states['palette']])
 
             #
@@ -131,8 +132,9 @@ def parse(file):
 
                 # (z, x, y) -> (x, y, z)
                 blocks = palette[bit_map.flatten()].reshape(16, 16, 16).transpose(2, 0, 1)
-                
-            world["{}|{}|{}".format(chunk_nbt["xPos"].unpack(), chunk["Y"].unpack(), chunk_nbt["zPos"].unpack())] = blocks
+            
+            chunks[section["Y"].unpack()] = blocks
+        
+        chunks_map[chunks_index // 32][chunks_index % 32] = chunks
 
-    return
-
+    return chunks_map
