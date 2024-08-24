@@ -32,6 +32,7 @@ class World():
             regions_index[coord[0], coord[1]] = len(regions)
             regions.append(r)
             
+        self.mca_coord_list = mca_coord_list
         self.regions_index = regions_index
         self.regions = regions
 
@@ -59,6 +60,30 @@ class World():
         block = sections[in_chunks_x, in_chunks_y, in_chunks_z]
 
         return block
+    
+    def __iter__(self):
+        self.index = 0
+        return self
 
-if __name__ == "__main__":
-    pass
+    def __next__(self):
+        if self.index >= len(self.regions):
+            raise StopIteration
+
+        i = self.index
+        self.index += 1
+        return self.mca_coord_list[i], self.regions[i]
+
+
+    def iter_all_blocks(self):
+        for region_coord, region in self:
+            for chunk_coord, chunks in region:
+                if chunks is None:
+                    continue
+
+                for section_coord, section in chunks:
+                    for block_coord, block in section:
+                        x = region_coord[0] * 32 * 16 + chunk_coord[0] * 16 + block_coord[0]
+                        y = section_coord * 16 + block_coord[1]
+                        z = region_coord[1] * 32 * 16 + chunk_coord[1] * 16 + block_coord[2]
+                        yield (x, y, z), block
+

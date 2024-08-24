@@ -78,11 +78,29 @@ class Section():
 
     def load(self, compound: nbtlib.tag.Compound):
         return Section(compound)
+    
+    def __iter__(self):
+        self.index = 0
+        return self
+
+    def __next__(self):
+        if self.index >= 4096:
+            raise StopIteration
+        
+        y = self.index // (16 * 16)
+        z = (self.index - y * 16 * 16) // 16
+        x = self.index % 16
+
+        self.index += 1
+        return (x, y, z), self.palette[self.bitmap[x][y][z]]
 
 
 class Chunk():
     def __init__(self, chunk_nbt: nbtlib.tag.Compound):
-        self.chunks = [None] * 25
+        #
+        # the range is -4 ~ 19
+        #
+        self.chunks = [None] * 24
 
         #
         # the metadata offset of the chunk (x, z) is "x + 32z"
@@ -100,6 +118,17 @@ class Chunk():
         
         return self.chunks[index]
     
+    def __iter__(self):
+        self.index = -4
+        return self
+    
+    def __next__(self):
+        if self.index >= 19:
+            raise StopIteration
+        
+        i = self.index
+        self.index += 1
+        return i, self.chunks[i]
 
 class Region:
     def __init__(self, file: str):
@@ -123,7 +152,7 @@ class Region:
         # A region file contains 32 * 32 chunks, each chunk take 4bit location in inode 0
         #
         locations_bytes = struct.unpack_from('>{}'.format('4s' * 1024), buff, offset=0)
-        chunks_map = [[0] * 32 for _ in range(32)]
+        chunks_map = [[None] * 32 for _ in range(32)]
 
         for chunks_index, location in enumerate(locations_bytes):
             # 
@@ -179,4 +208,19 @@ class Region:
             raise NotImplementedError
     
         return self.chunks_map[index[0]][index[1]]
+    
+    def __iter__(self):
+        self.index = 0
+        return self
+    
+    def __next__(self):
+        if self.index >= 1024:
+            raise StopIteration
+
+        x = self.index // 32
+        z = self.index % 32
+        self.index += 1
+        return (x, z), self.chunks_map[x][z]
+    
+
     
