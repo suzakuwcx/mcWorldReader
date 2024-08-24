@@ -165,6 +165,9 @@ class Region:
     
 
     def mkcache(self):
+        if self.cache:
+            return
+
         with open(self.file, mode='rb') as f:
             buff = f.read()
     
