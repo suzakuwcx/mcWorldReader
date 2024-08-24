@@ -93,6 +93,9 @@ class Section():
 
         self.index += 1
         return (x, y, z), self.palette[self.bitmap[x][y][z]]
+    
+    def is_one_block_section(self):
+        return len(self.palette) == 1
 
 
 class Chunk():

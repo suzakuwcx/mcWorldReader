@@ -74,13 +74,16 @@ class World():
         return self.mca_coord_list[i], self.regions[i]
 
 
-    def iter_all_blocks(self):
+    def iter_all_blocks(self, skip_one_block_section=True):
         for region_coord, region in self:
             for chunk_coord, chunks in region:
                 if chunks is None:
                     continue
 
                 for section_coord, section in chunks:
+                    if section.is_one_block_section():
+                        continue
+
                     for block_coord, block in section:
                         x = region_coord[0] * 32 * 16 + chunk_coord[0] * 16 + block_coord[0]
                         y = section_coord * 16 + block_coord[1]
