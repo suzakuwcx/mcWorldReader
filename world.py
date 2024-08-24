@@ -93,3 +93,5 @@ class World():
                         z = region_coord[1] * 32 * 16 + chunk_coord[1] * 16 + block_coord[2]
                         yield (x, y, z), block
 
+            region.empty_cache()
+

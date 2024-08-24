@@ -135,9 +135,39 @@ class Chunk():
 
 class Region:
     def __init__(self, file: str):
-        with open(file, mode='rb') as f:
-            buff = f.read()
+        self.file = file
+        self.cache = False
 
+    @classmethod
+    def load(cls, file: str):
+        return Region(file)
+
+    def __getitem__(self, index):
+        if not isinstance(index, tuple) or len(index) != 2:
+            raise NotImplementedError
+        
+        self.mkcache()
+        return self.chunks_map[index[0]][index[1]]
+    
+    def __iter__(self):
+        self.index = 0
+        self.mkcache()
+        return self
+    
+    def __next__(self):
+        if self.index >= 1024:
+            raise StopIteration
+
+        x = self.index // 32
+        z = self.index % 32
+        self.index += 1
+        return (x, z), self.chunks_map[x][z]
+    
+
+    def mkcache(self):
+        with open(self.file, mode='rb') as f:
+            buff = f.read()
+    
         """
         Parsing Region file header, we only parsing chunk data
 
@@ -201,29 +231,11 @@ class Region:
             chunks_map[chunks_index // 32][chunks_index % 32] = Chunk(chunk_nbt)
 
         self.chunks_map = chunks_map
+        self.cache = True
 
-    @classmethod
-    def load(cls, file: str):
-        return Region(file)
-
-    def __getitem__(self, index):
-        if not isinstance(index, tuple) or len(index) != 2:
-            raise NotImplementedError
-    
-        return self.chunks_map[index[0]][index[1]]
-    
-    def __iter__(self):
-        self.index = 0
-        return self
-    
-    def __next__(self):
-        if self.index >= 1024:
-            raise StopIteration
-
-        x = self.index // 32
-        z = self.index % 32
-        self.index += 1
-        return (x, z), self.chunks_map[x][z]
-    
-
-    
+    def empty_cache(self):
+        if self.cache:
+            return
+        
+        del self.chunks_map
+        self.cache = False
