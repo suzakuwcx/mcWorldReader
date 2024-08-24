@@ -76,22 +76,11 @@ class World():
 
     def iter_all_blocks(self, skip_one_block_section=True, skip_block_list=None):
         for region_coord, region in self:
-            for chunk_coord, chunks in region:
-                if chunks is None:
-                    continue
-
-                for section_coord, section in chunks:
-                    if section.is_one_block_section():
-                        continue
-
-                    for block_coord, block in section:
-                        if skip_block_list is not None and block in skip_block_list:
-                            continue
-
-                        x = region_coord[0] * 32 * 16 + chunk_coord[0] * 16 + block_coord[0]
-                        y = section_coord * 16 + block_coord[1]
-                        z = region_coord[1] * 32 * 16 + chunk_coord[1] * 16 + block_coord[2]
-                        yield (x, y, z), block
+            for coord, block in region.iter_all_blocks(skip_one_block_section, skip_block_list):
+                x = region_coord[0] * 512 + coord[0]
+                y = coord[1]
+                z = region_coord[1] * 512 + coord[2]
+                yield (x, y, z), block
 
             region.empty_cache()
 

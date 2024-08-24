@@ -233,9 +233,29 @@ class Region:
         self.chunks_map = chunks_map
         self.cache = True
 
+
     def empty_cache(self):
         if self.cache:
             return
         
         del self.chunks_map
         self.cache = False
+
+
+    def iter_all_blocks(self, skip_one_block_section=True, skip_block_list=None):
+        for chunk_coord, chunks in self:
+            if chunks is None:
+                continue
+
+            for section_coord, section in chunks:
+                if section.is_one_block_section():
+                    continue
+
+                for block_coord, block in section:
+                    if skip_block_list is not None and block in skip_block_list:
+                        continue
+
+                    x = chunk_coord[0] * 16 + block_coord[0]
+                    y = section_coord * 16 + block_coord[1]
+                    z = chunk_coord[1] * 16 + block_coord[2]
+                    yield (x, y, z), block
