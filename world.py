@@ -36,6 +36,18 @@ class World():
         self.regions_index = regions_index
         self.regions = regions
 
+    
+    def get_region(self, x, z):
+        #
+        # x and z means region x and region z
+        #
+        try:
+            index = self.regions_index[x, z]
+        except:
+            return None
+        return self.regions[index]
+    
+
     def get_block(self, x, y, z):
         #
         # a region block size is 512 x 512 (32 x 32 chunks, each chunks 16 x 16)
@@ -54,7 +66,7 @@ class World():
         in_chunks_y = y % 16
         in_chunks_z = in_regions_z % 16
 
-        region = self.regions[self.regions_index[regions_x, regions_z]]
+        region = self.get_region(regions_x, regions_z)
         chunks = region[chunks_x, chunks_z]
         sections = chunks[chunks_y]
         block = sections[in_chunks_x, in_chunks_y, in_chunks_z]
