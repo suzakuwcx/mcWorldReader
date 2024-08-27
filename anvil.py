@@ -238,7 +238,7 @@ class Region:
 
 
     def empty_cache(self):
-        if self.cache:
+        if not self.cache:
             return
         
         del self.chunks_map
