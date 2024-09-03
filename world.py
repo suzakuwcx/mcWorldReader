@@ -2,7 +2,6 @@ from anvil import Region
 import glob
 import multiprocessing
 import re
-from scipy.sparse import lil_matrix
 
 class World():
     def __init__(self, path) -> None:
@@ -10,27 +9,16 @@ class World():
 
         mca_list = []
         mca_coord_list = []
-        x_min = 0
-        x_max = 0
-        z_min = 0
-        z_max = 0
+        regions_index = {}
         for mca in glob.iglob('{}/r.*.*.mca'.format(self.region)):
             x, z = [int(n) for n in re.findall(r'-?\d+', mca)]
-            if x > x_max: x_max = x
-            if x < x_min: x_min = x
-            if z > z_max: z_max = z
-            if z < z_min: z_min = z
+            regions_index[(x, z)] = len(mca_list)
             mca_coord_list.append((x, z))
             mca_list.append(mca)
 
-        regions_index = lil_matrix((x_max - x_min + 1, z_max - z_min + 1), dtype=int)
         regions = []
         with multiprocessing.Pool() as p:
-            result = p.map(Region.load, mca_list)
-
-        for coord, r in zip(mca_coord_list, result):
-            regions_index[coord[0], coord[1]] = len(regions)
-            regions.append(r)
+            regions = p.map(Region.load, mca_list)
             
         self.mca_coord_list = mca_coord_list
         self.regions_index = regions_index
@@ -42,7 +30,7 @@ class World():
         # x and z means region x and region z
         #
         try:
-            index = self.regions_index[x, z]
+            index = self.regions_index[(x, z)]
         except:
             return None
         return self.regions[index]
@@ -68,6 +56,7 @@ class World():
 
         region = self.get_region(regions_x, regions_z)
         chunks = region[chunks_x, chunks_z]
+
         sections = chunks[chunks_y]
         block = sections[in_chunks_x, in_chunks_y, in_chunks_z]
 
