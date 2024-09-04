@@ -56,6 +56,8 @@ class World():
 
         region = self.get_region(regions_x, regions_z)
         chunks = region[chunks_x, chunks_z]
+        if chunks == None:
+            return None
 
         sections = chunks[chunks_y]
         block = sections[in_chunks_x, in_chunks_y, in_chunks_z]
