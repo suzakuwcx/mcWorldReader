@@ -1,4 +1,9 @@
 .*
+*.lprof
+*.zstd
+
 /__pycache__/
+/build/
+
 
 !.gitignore
