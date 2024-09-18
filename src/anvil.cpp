@@ -1,4 +1,6 @@
 #include "anvil.h"
+#include "pool.hpp"
+
 #include "tag_list.h"
 #include "tag.h"
 #include "tagfwd.h"
@@ -10,27 +12,26 @@
 #include "tag_array.h"
 #include "value.h"
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <exception>
 #include <fstream>
+#include <future>
 #include <ios>
 #include <iostream>
 #include <memory>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <sys/types.h>
 #include <utility>
 #include <vector>
-#include <thread>
 #include <arpa/inet.h>
 #include <byteswap.h>
 #include <make_unique.h>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/post.hpp>
 
 
 Section::Section(nbt::value &val) : bitmap(4096, 0)
@@ -196,8 +197,16 @@ void Region::mkcache()
         location_bytes.at(i) = header;
     }
 
+    std::vector<std::future<std::unique_ptr<nbt::tag_compound> > > vec(1024);
+
     for (int i = 0; i < 1024; ++i) {
-        std::unique_ptr<nbt::tag_compound> ptr = parse_region_file(buff, location_bytes[i]);
+        vec[i] = Pool::submit(&Region::parse_region_file, buff, location_bytes[i]);
+    }
+
+    Pool::join();
+
+    for (int i = 0; i < 1024; ++i) {
+        std::unique_ptr<nbt::tag_compound> ptr = vec[i].get();
 
         if (ptr == nullptr)
             (*(this->chunks_map))[i] = std::make_unique<Chunk>();
