@@ -203,8 +203,6 @@ void Region::mkcache()
         vec[i] = Pool::submit(&Region::parse_region_file, buff, location_bytes[i]);
     }
 
-    Pool::join();
-
     for (int i = 0; i < 1024; ++i) {
         std::unique_ptr<nbt::tag_compound> ptr = vec[i].get();
 
