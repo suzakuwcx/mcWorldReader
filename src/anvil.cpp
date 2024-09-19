@@ -137,13 +137,13 @@ Region::Region(const char *f)
 
 Region::~Region() {}
 
-std::unique_ptr<nbt::tag_compound> Region::parse_region_file(std::vector<unsigned char> &buff, struct region_header r_head)
+std::unique_ptr<nbt::tag_compound> Region::parse_region_file(std::vector<unsigned char> *buff, struct region_header r_head)
 {
     if (r_head.st_blocks == 0)
         return nullptr;
 
     struct chunk_header c_head;
-    unsigned char *begin = buff.data() + 4096 * r_head.st_ino;
+    unsigned char *begin = buff->data() + 4096 * r_head.st_ino;
 
     memcpy(&c_head, begin, 5);
     c_head.st_size = bswap_32(c_head.st_size);
@@ -200,7 +200,7 @@ void Region::mkcache()
     std::vector<std::future<std::unique_ptr<nbt::tag_compound> > > vec(1024);
 
     for (int i = 0; i < 1024; ++i) {
-        vec[i] = Pool::submit(&Region::parse_region_file, buff, location_bytes[i]);
+        vec[i] = Pool::submit(&Region::parse_region_file, &buff, location_bytes[i]);
     }
 
     for (int i = 0; i < 1024; ++i) {

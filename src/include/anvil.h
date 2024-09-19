@@ -60,7 +60,7 @@ private:
     bool cache = false;
     std::unique_ptr<std::vector<std::unique_ptr<Chunk>>> chunks_map;
 
-    static std::unique_ptr<nbt::tag_compound> parse_region_file(std::vector<unsigned char> &buff, struct region_header r_head);
+    static std::unique_ptr<nbt::tag_compound> parse_region_file(std::vector<unsigned char> *buff, struct region_header r_head);
 public:
     Region(const Region &);
     Region(const char *);
