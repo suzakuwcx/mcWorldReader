@@ -90,7 +90,7 @@ Section::~Section() {}
 
 std::string &Section::get(int x, int y, int z)
 {
-    return (*(this->palette))[256 * x + 16 * y + z];
+    return ((*(this->palette))[(this->bitmap)[256 * x + 16 * y + z]]);
 }
 
 Chunk::Chunk(): vec(0) {}
