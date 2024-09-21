@@ -101,7 +101,7 @@ std::string &Section::get(int x, int y, int z)
 
 Chunk::Chunk(): vec(0) {}
 
-Chunk::Chunk(const std::unique_ptr<nbt::tag_compound> &ptr): vec(25)
+Chunk::Chunk(const std::unique_ptr<nbt::tag_compound> &ptr): vec(24)
 {
     auto val(ptr->at("sections"));
     int i;
