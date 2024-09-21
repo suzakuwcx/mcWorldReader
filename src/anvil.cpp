@@ -21,17 +21,23 @@
 #include <future>
 #include <ios>
 #include <iostream>
+#include <iterator>
 #include <memory>
+#include <regex>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <sys/types.h>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include <arpa/inet.h>
 #include <byteswap.h>
 #include <make_unique.h>
+#include <filesystem>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/post.hpp>
+#include <regex.h>
 
 
 Section::Section(nbt::value &val) : bitmap(4096, 0)
@@ -129,7 +135,7 @@ Region::Region(const Region &r)
         this->mkcache();
 }
 
-Region::Region(const char *f)
+Region::Region(std::string &&f)
 {
     this->chunks_map = std::make_unique<std::vector<std::unique_ptr<Chunk>>>(1024);
     this->file = f;
@@ -224,7 +230,96 @@ void Region::empty_cache()
     this->chunks_map.reset();
 }
 
-Chunk &Region::getitem(int index) 
+Chunk &Region::getitem(int x, int z) 
 {
-    return (*((*(this->chunks_map))[index]));
+    this->mkcache();
+    return (*((*(this->chunks_map))[x * 32 + z]));
+}
+
+std::regex World::number_pattern("-?\\d+");
+
+World::World(std::string &&path)
+{
+    this->path = path;
+    this->region_path = path + "/region";
+    this->mca_pattern = this->region_path + "/r\\.-?\\d+\\.-?\\d+\\.mca";
+
+    std::smatch m;
+
+    for (const auto &entry : std::filesystem::directory_iterator(this->region_path)) {
+        if (std::regex_match(entry.path().native(), m, this->mca_pattern)) {
+            std::tuple<int32_t, int32_t> tp = parsing_coord(entry.path().native().substr(region_path.length() + 1));
+            this->mca_coord_list.push_back(tp);
+            this->region_index[get_key(std::get<0>(tp), std::get<1>(tp))] = regions.size();
+            this->regions.emplace_back(entry.path().c_str());
+        }
+    }
+}
+
+World::~World() {}
+
+std::tuple<int32_t, int32_t> World::parsing_coord(const std::basic_string<char> &file)
+{
+    int32_t x = 0;
+    int32_t z = 0;
+
+    auto iter_begin = std::sregex_iterator(file.begin(), file.end(), number_pattern);
+    auto iter_end = std::sregex_iterator();
+
+    if (std::distance(iter_begin, iter_end) != 2)
+        throw std::runtime_error("invalid mca file name:" + file);
+
+    x = std::stoi((*iter_begin).str());
+    z = std::stoi((*(++iter_begin)).str());
+
+    return std::tuple<int32_t, int32_t>(x, z);
+}
+
+uint64_t World::get_key(int32_t x, int32_t z)
+{
+    uint64_t ret = static_cast<uint64_t>(x);
+    ret <<= 32;
+    ret |= static_cast<uint64_t>(z);
+    return ret;
+}
+
+Region &World::get_region(int32_t x, int32_t z)
+{
+    return this->regions[region_index[get_key(x, z)]];
+}
+
+std::string &World::get_block(int32_t x, int32_t y, int32_t z)
+{
+    int32_t regions_x = x / 512;
+    int32_t regions_z = z / 512;
+
+    int32_t in_regions_x = x % 512;
+    int32_t in_regions_z = z % 512;
+
+    if (y < 0)
+        y -= 15; /* e.g. block y=-16 is at chunk Y=-2, but -16 / 16 = -1 */
+
+    int32_t chunks_x = in_regions_x / 16;
+    int32_t chunks_y = y / 16;
+    int32_t chunks_z = in_regions_z / 16;
+
+    if (y < 0)
+        y += 15;
+
+    int32_t in_chunks_x = in_regions_x % 16;
+    int32_t in_chunks_y = y % 16;
+    int32_t in_chunks_z = in_regions_z % 16;
+
+    if (in_chunks_y < 0)
+        in_chunks_y += 16;
+
+    Region &r = this->get_region(regions_x, regions_z);
+    Chunk &c = r.getitem(chunks_x, chunks_z);
+    if (c.is_null()) {
+        char buff[128];
+        snprintf(buff, sizeof(buff), "Uninitilize block (%d, %d, %d)", x, y, z);
+        throw std::runtime_error(buff);
+    }
+    std::shared_ptr<Section> &s = c.get(chunks_y);
+    return s->get(in_chunks_x, in_chunks_y, in_chunks_z);
 }
