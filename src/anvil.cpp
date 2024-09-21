@@ -12,6 +12,9 @@
 #include "tag_array.h"
 #include "value.h"
 
+#include <boost/python/extract.hpp>
+#include <boost/python/handle.hpp>
+#include <boost/python/tuple.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -92,6 +95,11 @@ Section::Section(nbt::value &val) : bitmap(4096, 0)
     }
 }
 
+Section::Section(const Section& sec) : bitmap(sec.bitmap)
+{
+    this->palette = std::make_unique<std::vector<std::string>>(*(sec.palette));
+}
+
 Section::~Section() {}
 
 std::string &Section::get(int x, int y, int z)
@@ -100,6 +108,12 @@ std::string &Section::get(int x, int y, int z)
 }
 
 Chunk::Chunk(): vec(0) {}
+
+Chunk::Chunk(const Chunk &ch): vec(24)
+{
+    for (int i = 0; i < vec.size(); ++i)
+        vec[i] = std::make_unique<Section>(*(ch.vec[i]));
+}
 
 Chunk::Chunk(const std::unique_ptr<nbt::tag_compound> &ptr): vec(24)
 {
@@ -230,9 +244,11 @@ void Region::empty_cache()
     this->chunks_map.reset();
 }
 
-Chunk &Region::getitem(int x, int z) 
+Chunk &Region::getitem(boost::python::tuple index)
 {
     this->mkcache();
+    int x = boost::python::extract<int>(index[0]);
+    int z = boost::python::extract<int>(index[1]);
     return (*((*(this->chunks_map))[x * 32 + z]));
 }
 
@@ -315,7 +331,7 @@ std::string &World::get_block(int32_t x, int32_t y, int32_t z)
     int32_t in_chunks_z = in_regions_z % 16;
 
     Region &r = this->get_region(regions_x, regions_z);
-    Chunk &c = r.getitem(chunks_x, chunks_z);
+    Chunk &c = r.getitem(boost::python::make_tuple<int, int>(chunks_x, chunks_z));
     if (c.is_null()) {
         char buff[128];
         snprintf(buff, sizeof(buff), "Uninitilize block (%d, %d, %d)", x, y, z);
