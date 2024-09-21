@@ -108,10 +108,10 @@ Chunk::Chunk(const std::unique_ptr<nbt::tag_compound> &ptr): vec(25)
 
     if (static_cast<int>(val.at(0).at("Y")) == -5) {
         for (i = -4; i < 20; ++i)
-            this->vec[i + 4] = std::make_shared<Section>(val.at(i + 5));        
+            this->vec[i + 4] = std::make_unique<Section>(val.at(i + 5));        
     } else {
         for (i = -4; i < 20; ++i)
-            this->vec[i + 4] = std::make_shared<Section>(val.at(i + 4));
+            this->vec[i + 4] = std::make_unique<Section>(val.at(i + 4));
     }
 }
 
@@ -122,9 +122,9 @@ bool Chunk::is_null()
     return vec.size() == 0;
 }
 
-std::shared_ptr<Section> &Chunk::get(int y)
+Section &Chunk::get(int y)
 {
-    return this->vec.at(y + 4);
+    return *((this->vec)[y + 4]);
 }
 
 Region::Region(const Region &r)
@@ -321,6 +321,6 @@ std::string &World::get_block(int32_t x, int32_t y, int32_t z)
         snprintf(buff, sizeof(buff), "Uninitilize block (%d, %d, %d)", x, y, z);
         throw std::runtime_error(buff);
     }
-    std::shared_ptr<Section> &s = c.get(chunks_y);
-    return s->get(in_chunks_x, in_chunks_y, in_chunks_z);
+    Section &s = c.get(chunks_y);
+    return s.get(in_chunks_x, in_chunks_y, in_chunks_z);
 }

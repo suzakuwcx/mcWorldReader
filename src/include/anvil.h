@@ -48,14 +48,14 @@ public:
 
 class Chunk {
 private:
-    std::vector<std::shared_ptr<Section>> vec;
+    std::vector<std::unique_ptr<Section>> vec;
 public:
     Chunk();
     Chunk(const std::unique_ptr<nbt::tag_compound> &ptr);
     ~Chunk();
 
     bool is_null();
-    std::shared_ptr<Section> &get(int y);
+    Section &get(int y);
 };
 
 
