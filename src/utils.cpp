@@ -6,16 +6,15 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/traits.hpp>
 #include <cstring>
-#include <fstream>
 #include <ios>
 #include <iostream>
 #include <istream>
-#include <iterator>
-#include <memory>
 #include <sstream>
 #include <vector>
 
+
 namespace bio = boost::iostreams;
+
 
 namespace zlib {
     void decompress(std::vector<unsigned char> &output) {
@@ -41,6 +40,7 @@ namespace zlib {
         output.insert(output.end(), vec.data(), vec.data() + vec.size());
     }
 }
+
 
 namespace gzip {
     void decompress(std::vector<unsigned char> &output) {

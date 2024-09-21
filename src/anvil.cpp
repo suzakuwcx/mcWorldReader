@@ -12,9 +12,11 @@
 #include "tag_array.h"
 #include "value.h"
 
+#include <boost/asio/thread_pool.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/handle.hpp>
 #include <boost/python/tuple.hpp>
+#include <boost/asio/post.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -38,9 +40,6 @@
 #include <byteswap.h>
 #include <make_unique.h>
 #include <filesystem>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/asio/post.hpp>
-#include <regex.h>
 
 
 Section::Section(nbt::value &val) : bitmap(4096, 0)
@@ -95,25 +94,31 @@ Section::Section(nbt::value &val) : bitmap(4096, 0)
     }
 }
 
+
 Section::Section(const Section& sec) : bitmap(sec.bitmap)
 {
     this->palette = std::make_unique<std::vector<std::string>>(*(sec.palette));
 }
 
-Section::~Section() {}
+
+Section::~Section() = default;
+
 
 std::string &Section::get(int x, int y, int z)
 {
     return ((*(this->palette))[(this->bitmap)[256 * x + 16 * y + z]]);
 }
 
+
 Chunk::Chunk(): vec(0) {}
+
 
 Chunk::Chunk(const Chunk &ch): vec(24)
 {
     for (int i = 0; i < vec.size(); ++i)
         vec[i] = std::make_unique<Section>(*(ch.vec[i]));
 }
+
 
 Chunk::Chunk(const std::unique_ptr<nbt::tag_compound> &ptr): vec(24)
 {
@@ -129,17 +134,21 @@ Chunk::Chunk(const std::unique_ptr<nbt::tag_compound> &ptr): vec(24)
     }
 }
 
-Chunk::~Chunk() {}
+
+Chunk::~Chunk() = default;
+
 
 bool Chunk::is_null()
 {
     return vec.size() == 0;
 }
 
+
 Section &Chunk::get(int y)
 {
     return *((this->vec)[y + 4]);
 }
+
 
 Region::Region(const Region &r)
 {
@@ -149,13 +158,16 @@ Region::Region(const Region &r)
         this->mkcache();
 }
 
+
 Region::Region(std::string &&f)
 {
     this->chunks_map = std::make_unique<std::vector<std::unique_ptr<Chunk>>>(1024);
     this->file = f;
 }
 
-Region::~Region() {}
+
+Region::~Region() = default;
+
 
 std::unique_ptr<nbt::tag_compound> Region::parse_region_file(std::vector<unsigned char> *buff, struct region_header r_head)
 {
@@ -190,6 +202,7 @@ std::unique_ptr<nbt::tag_compound> Region::parse_region_file(std::vector<unsigne
 
     return std::move(pair.second);
 }
+
 
 void Region::mkcache()
 {
@@ -235,6 +248,7 @@ void Region::mkcache()
     this->cache = true;
 }
 
+
 void Region::empty_cache()
 {
     if (!this->cache)
@@ -244,6 +258,7 @@ void Region::empty_cache()
     this->chunks_map.reset();
 }
 
+
 Chunk &Region::getitem(boost::python::tuple index)
 {
     this->mkcache();
@@ -252,13 +267,15 @@ Chunk &Region::getitem(boost::python::tuple index)
     return (*((*(this->chunks_map))[x * 32 + z]));
 }
 
+
 std::regex World::number_pattern("-?\\d+");
+
 
 World::World(std::string &&path)
 {
     this->path = path;
     this->region_path = path + "/region";
-    this->mca_pattern = this->region_path + "/r\\.-?\\d+\\.-?\\d+\\.mca";
+    this->mca_pattern = this->region_path + R"(/r\.-?\d+\.-?\d+\.mca)";
 
     std::smatch m;
 
@@ -272,7 +289,9 @@ World::World(std::string &&path)
     }
 }
 
-World::~World() {}
+
+World::~World() = default;
+
 
 std::tuple<int32_t, int32_t> World::parsing_coord(const std::basic_string<char> &file)
 {
@@ -291,6 +310,7 @@ std::tuple<int32_t, int32_t> World::parsing_coord(const std::basic_string<char> 
     return std::tuple<int32_t, int32_t>(x, z);
 }
 
+
 uint64_t World::get_key(int32_t x, int32_t z)
 {
     uint64_t ret = static_cast<uint64_t>(x);
@@ -299,10 +319,12 @@ uint64_t World::get_key(int32_t x, int32_t z)
     return ret;
 }
 
+
 Region &World::get_region(int32_t x, int32_t z)
 {
     return this->regions[region_index[get_key(x, z)]];
 }
+
 
 std::string &World::get_block(int32_t x, int32_t y, int32_t z)
 {

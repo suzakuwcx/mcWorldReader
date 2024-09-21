@@ -16,6 +16,7 @@ namespace Pool
     static std::shared_ptr<std::mutex> lock;
     static std::shared_ptr<std::queue<std::function<void()> > > tasks;
 
+
     static void loop_main(std::shared_ptr<std::queue<std::function<void()> > > tasks, std::shared_ptr<std::mutex> lock, std::shared_ptr<boost::interprocess::interprocess_semaphore> sem) {
         while (true) {
             sem->wait();
@@ -30,6 +31,7 @@ namespace Pool
         }
     }
 
+
     static void init() {
         sem = std::make_shared<boost::interprocess::interprocess_semaphore> (0);
         lock = std::make_shared<std::mutex> ();
@@ -42,6 +44,7 @@ namespace Pool
             pool->at(i).detach();
         }        
     }
+
 
     template <typename F, typename ...Args>
     std::future<typename std::invoke_result<F, Args...>::type> submit(F&& f, Args&& ...args) {

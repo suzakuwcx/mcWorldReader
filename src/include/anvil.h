@@ -18,21 +18,25 @@
 #include <boost/python/init.hpp>
 #include <boost/python.hpp>
 
+
 struct region_header {
     uint32_t st_ino : 24;
     uint32_t st_blocks : 8;
 };
+
 
 struct chunk_header {
     uint32_t st_size;
     uint8_t st_mode;
 };
 
+
 #define bswap_24(x) (\
     (x & 0xff) << 16 | \
     (x & 0xff00) | \
     (x & 0xff0000) >> 16 \
 )
+
 
 class Section {
 private:
@@ -114,7 +118,6 @@ BOOST_PYTHON_MODULE(canvil) {
     boost::python::class_<Chunk>("Chunk", boost::python::init<>())
         .def("is_null", &Chunk::is_null)
         .def("get", &Chunk::get, boost::python::return_value_policy<boost::python::reference_existing_object>());
-
 
     boost::python::class_<Region>("Region", boost::python::init<const char *>())
         .def("mkcache", &Region::mkcache)
