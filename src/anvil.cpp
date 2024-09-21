@@ -290,28 +290,29 @@ Region &World::get_region(int32_t x, int32_t z)
 
 std::string &World::get_block(int32_t x, int32_t y, int32_t z)
 {
+    /*
+     * to prevent deviation, e.g. block y=-15 is at chunk Y=-1, 
+     * but -15 / 16 = 0, so we add 64 offset, then subtract 4
+     * at final. e.g. y = -15 + 64 = 49, then 49 / 16 = 3, 3 - 4 = -1
+     */
+    y += 64;
+
     int32_t regions_x = x / 512;
     int32_t regions_z = z / 512;
 
     int32_t in_regions_x = x % 512;
     int32_t in_regions_z = z % 512;
 
-    if (y < 0)
-        y -= 15; /* e.g. block y=-16 is at chunk Y=-2, but -16 / 16 = -1 */
 
     int32_t chunks_x = in_regions_x / 16;
     int32_t chunks_y = y / 16;
     int32_t chunks_z = in_regions_z / 16;
 
-    if (y < 0)
-        y += 15;
+    chunks_y -= 4;
 
     int32_t in_chunks_x = in_regions_x % 16;
     int32_t in_chunks_y = y % 16;
     int32_t in_chunks_z = in_regions_z % 16;
-
-    if (in_chunks_y < 0)
-        in_chunks_y += 16;
 
     Region &r = this->get_region(regions_x, regions_z);
     Chunk &c = r.getitem(chunks_x, chunks_z);
