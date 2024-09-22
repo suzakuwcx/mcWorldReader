@@ -51,6 +51,7 @@ public:
     ~Section();
 
     std::string &get(int x, int y, int z);
+    bool is_one_block_section();
 };
 
 
@@ -113,6 +114,7 @@ BOOST_PYTHON_MODULE(canvil) {
         .def("c_str", &std::string::c_str);
 
     boost::python::class_<Section>("Section", boost::python::init<nbt::value &>())
+        .def("is_one_block_section", &Section::is_one_block_section)
         .def("get", &Section::get, boost::python::return_value_policy<boost::python::reference_existing_object>());
 
     boost::python::class_<Chunk>("Chunk", boost::python::init<>())

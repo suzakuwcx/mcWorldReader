@@ -110,6 +110,12 @@ std::string &Section::get(int x, int y, int z)
 }
 
 
+bool Section::is_one_block_section()
+{
+    return this->palette->size() == 1;
+}
+
+
 Chunk::Chunk(): vec(0) {}
 
 
