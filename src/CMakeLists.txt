@@ -12,3 +12,5 @@ add_custom_command(
     POST_BUILD
     COMMAND cp -f $<TARGET_FILE:canvil> ${PROJECT_BINARY_DIR}
 )
+
+add_python_source(world.py)
