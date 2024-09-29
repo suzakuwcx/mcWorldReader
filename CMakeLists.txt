@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.28.3)
 
 project(mcworldreader)
 
+if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+    message(FATAL_ERROR "conda environment does not support gcc version greater than 12")
+endif (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+
 function(add_python_source source)
     file(RELATIVE_PATH relative_source ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${source})
     string(REPLACE "/" "-" tgt ${relative_source})
