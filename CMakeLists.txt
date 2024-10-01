@@ -16,4 +16,4 @@ function(add_python_source source)
 endfunction(add_python_source)
 
 add_subdirectory(3rdparty)
-add_subdirectory(src)
+add_subdirectory(mcworldreader)
