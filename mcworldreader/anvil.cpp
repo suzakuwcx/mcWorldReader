@@ -152,6 +152,12 @@ bool Chunk::is_null()
 
 Section &Chunk::get(int y)
 {
+    if (y < -4 || y > 19) {
+        std::string msg("Y value out of range: ");
+        msg += std::to_string(y);
+        throw std::runtime_error(msg);
+    }
+
     return *((this->vec)[y + 4]);
 }
 

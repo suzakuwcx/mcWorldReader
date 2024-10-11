@@ -73,6 +73,9 @@ class World():
     
 
     def get_block(self, x, y, z):
+        if y < -64 or y > 319:
+            return None
+        
         #
         # a region block size is 512 x 512 (32 x 32 chunks, each chunks 16 x 16)
         #
