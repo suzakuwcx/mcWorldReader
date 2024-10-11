@@ -14,20 +14,33 @@ We hope to promote the development of AI in minecraft, may be a minecraft modali
 
 # Installation
 
-Clone this repository and install the package
+Install gcc12, for archlinux user, using command below
+
+```shell
+yay -S gcc12
+```
+
+Creating a virutal environment using conda or micromamba, then install boost
+
+```
+micromamba install boost
+# or
+conda install conda-forge::boost
+```
+
+ Install the package
 
 > Note: For Chinese Mainline User, if you stuck on build project, this is because that
 > CMake will try to download dependency, see '3rdparty/CMakeLists.txt', please change
 > download link or using http proxy
 
 ```shell
-git clone https://github.com/suzakuwcx/mcWorldReader.git
-pip install mcWorldReader/
+pip install git+https://github.com/suzakuwcx/mcWorldReader.git
 ```
 
 # Usage
 
-## Initilize
+## Initilization
 
 ```python
 import mcworldreader as mwr
@@ -41,6 +54,7 @@ print(world.get_block(0, -64, 0))
 ```
 
 ## iterator all blocks
+
 ```python
 for coord, block in world.iter_all_blocks():
     print("{} | {}".format(coord, block))
